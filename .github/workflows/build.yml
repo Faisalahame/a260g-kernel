@@ -19,7 +19,15 @@ jobs:
             build-essential \
             libssl-dev \
             libelf-dev \
-            gcc-aarch64-linux-gnu
+            gcc-aarch64-linux-gnu \
+            wget
+
+      - name: Install Android GCC 4.9
+        run: |
+          mkdir -p toolchain
+          cd toolchain
+          wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/heads/master.tar.gz -O gcc.tar.gz
+          tar xf gcc.tar.gz
 
       - name: Prepare config
         run: |
@@ -29,12 +37,11 @@ jobs:
 
       - name: Build kernel
         run: |
+          export CROSS_COMPILE=$GITHUB_WORKSPACE/toolchain/bin/aarch64-linux-android-
           make -j$(nproc) \
             O=out \
             ARCH=arm64 \
-            CROSS_COMPILE=aarch64-linux-gnu- \
-            KCFLAGS="-Wno-error=attribute-alias -Wno-error=stringop-overread -Wno-error=implicit-function-declaration" \
-            WERROR=0
+            CROSS_COMPILE=$CROSS_COMPILE
 
       - name: Upload kernel
         uses: actions/upload-artifact@v4
