@@ -14,6 +14,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
+
           sudo apt install -y \
             bc \
             bison \
@@ -21,38 +22,115 @@ jobs:
             build-essential \
             libssl-dev \
             libelf-dev \
-            gcc-aarch64-linux-gnu
+            gcc-aarch64-linux-gnu \
+            binutils-aarch64-linux-gnu
 
       - name: Show compiler
         run: |
+          echo "=== GCC ==="
           aarch64-linux-gnu-gcc --version
+
+          echo "=== LD ==="
           aarch64-linux-gnu-ld --version
 
-      - name: Prepare config
+      - name: Check source tree
         run: |
+          echo "=== Kernel source ==="
+          pwd
+
+          echo "=== Defconfig ==="
+          ls -lh a260g_stock_defconfig
+
+          echo "=== Makefile ==="
+          ls -lh Makefile
+
+      - name: Prepare output
+        run: |
+          rm -rf out
           mkdir -p out
+
           cp a260g_stock_defconfig out/.config
-          make O=out ARCH=arm64 olddefconfig
+
+          make \
+            O=out \
+            ARCH=arm64 \
+            olddefconfig
+
+      - name: Show configuration
+        run: |
+          echo "=== Kernel version ==="
+
+          make \
+            O=out \
+            ARCH=arm64 \
+            kernelversion
+
+          echo "=== Important config ==="
+
+          grep -E \
+            'CONFIG_(ARM64|MODULES|BUILD_ARM64_KERNEL|CMDLINE)' \
+            out/.config || true
 
       - name: Build kernel
         run: |
+          set -o pipefail
+
           make -j2 V=1 \
             O=out \
             ARCH=arm64 \
             CROSS_COMPILE=aarch64-linux-gnu- \
-            KCFLAGS="-Wno-error -Wno-error=attribute-alias -Wno-error=stringop-overread -Wno-error=stringop-truncation -Wno-error=misleading-indentation -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=strict-prototypes -Wno-error=date-time"
+            KCFLAGS="-Wno-error" \
+            2>&1 | tee build.log
+
+      - name: Show build errors
+        if: failure()
+        run: |
+          echo "========================================"
+          echo "ACTUAL BUILD ERRORS"
+          echo "========================================"
+
+          grep -n -E \
+            "error:|Error:|fatal:|undefined reference|No such file|No rule to make" \
+            build.log | tail -100 || true
+
+          echo "========================================"
+          echo "LAST 200 LINES"
+          echo "========================================"
+
+          tail -200 build.log
 
       - name: Check output
         if: always()
         run: |
           echo "=== Kernel output ==="
-          find out/arch/arm64/boot -maxdepth 2 -type f -ls || true
+
+          if [ -d out/arch/arm64/boot ]; then
+            find out/arch/arm64/boot \
+              -maxdepth 2 \
+              -type f \
+              -ls
+          else
+            echo "No arch/arm64/boot directory"
+          fi
+
+      - name: Verify Image
+        if: success()
+        run: |
+          test -f out/arch/arm64/boot/Image
+
+          echo "========================================"
+          echo "KERNEL IMAGE SUCCESSFULLY BUILT"
+          echo "========================================"
+
+          ls -lh out/arch/arm64/boot/Image
+
+          file out/arch/arm64/boot/Image
 
       - name: Upload kernel
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: a260g-kernel-test
+          name: a260g-kernel
           path: |
             out/arch/arm64/boot/Image
             out/arch/arm64/boot/dtb*
