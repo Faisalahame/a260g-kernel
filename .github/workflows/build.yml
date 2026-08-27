@@ -19,15 +19,14 @@ jobs:
             build-essential \
             libssl-dev \
             libelf-dev \
-            gcc-aarch64-linux-gnu \
-            wget
+            git
 
       - name: Install Android GCC 4.9
         run: |
-          mkdir -p toolchain
-          cd toolchain
-          wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/heads/master.tar.gz -O gcc.tar.gz
-          tar xf gcc.tar.gz
+          git clone --depth=1 \
+            https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 \
+            toolchain
+          ls toolchain/bin
 
       - name: Prepare config
         run: |
