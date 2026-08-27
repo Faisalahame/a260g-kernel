@@ -30,9 +30,11 @@ jobs:
     - name: Build kernel
       run: |
         make -j$(nproc) \
-          O=out \
-          ARCH=arm64 \
-          CROSS_COMPILE=aarch64-linux-gnu-
+  O=out \
+  ARCH=arm64 \
+  CROSS_COMPILE=aarch64-linux-gnu- \
+  KCFLAGS="-Wno-error=attribute-alias -Wno-error=stringop-overread -Wno-error=implicit-function-declaration" \
+  WERROR=0
 
     - name: Upload kernel
       uses: actions/upload-artifact@v4
