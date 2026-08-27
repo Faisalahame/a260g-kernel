@@ -15,32 +15,31 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y \
-            bc bison flex \
+            bc \
+            bison \
+            flex \
             build-essential \
             libssl-dev \
             libelf-dev \
-            git
-
-      - name: Install Android GCC 4.9
-        run: |
-          git clone --depth=1 \
-            https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 \
-            toolchain
-          ls toolchain/bin
+            gcc-aarch64-linux-gnu
 
       - name: Prepare config
         run: |
-          mkdir out
+          mkdir -p out
           cp a260g_stock_defconfig out/.config
           make O=out ARCH=arm64 olddefconfig
 
       - name: Build kernel
         run: |
-          export CROSS_COMPILE=$GITHUB_WORKSPACE/toolchain/bin/aarch64-linux-android-
           make -j$(nproc) \
             O=out \
             ARCH=arm64 \
-            CROSS_COMPILE=$CROSS_COMPILE
+            CROSS_COMPILE=aarch64-linux-gnu-
+
+      - name: Check output
+        run: |
+          echo "=== Kernel output ==="
+          find out/arch/arm64/boot -maxdepth 1 -type f -ls
 
       - name: Upload kernel
         uses: actions/upload-artifact@v4
