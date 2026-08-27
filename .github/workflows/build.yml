@@ -8,36 +8,36 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y \
-          bc bison flex \
-          build-essential \
-          libssl-dev \
-          libelf-dev \
-          gcc-aarch64-linux-gnu
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            bc bison flex \
+            build-essential \
+            libssl-dev \
+            libelf-dev \
+            gcc-aarch64-linux-gnu
 
-    - name: Prepare config
-      run: |
-        mkdir out
-        cp a260g_stock_defconfig out/.config
-        make O=out ARCH=arm64 olddefconfig
+      - name: Prepare config
+        run: |
+          mkdir out
+          cp a260g_stock_defconfig out/.config
+          make O=out ARCH=arm64 olddefconfig
 
-    - name: Build kernel
-      run: |
-        make -j$(nproc) \
-  O=out \
-  ARCH=arm64 \
-  CROSS_COMPILE=aarch64-linux-gnu- \
-  KCFLAGS="-Wno-error=attribute-alias -Wno-error=stringop-overread -Wno-error=implicit-function-declaration" \
-  WERROR=0
+      - name: Build kernel
+        run: |
+          make -j$(nproc) \
+            O=out \
+            ARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            KCFLAGS="-Wno-error=attribute-alias -Wno-error=stringop-overread -Wno-error=implicit-function-declaration" \
+            WERROR=0
 
-    - name: Upload kernel
-      uses: actions/upload-artifact@v4
-      with:
-        name: a260g-kernel-test
-        path: out/arch/arm64/boot/
+      - name: Upload kernel
+        uses: actions/upload-artifact@v4
+        with:
+          name: a260g-kernel-test
+          path: out/arch/arm64/boot/
